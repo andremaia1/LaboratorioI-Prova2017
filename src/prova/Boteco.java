@@ -5,9 +5,7 @@
  */
 package prova;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  *
@@ -17,12 +15,10 @@ public class Boteco {
 
     private List<Produto> produtos;
     private double caixa;
-    private Scanner teclado;
 
     public Boteco() {
-        produtos = new ArrayList();
-        teclado = new Scanner(System.in);
-        caixa = 1000.00;
+        produtos = ManipulaArquivo.lerDados();
+        caixa = ManipulaArquivo.lerValorCaixa();
     }
 
     public void init() {
@@ -36,16 +32,13 @@ public class Boteco {
             System.out.println("|5. Verificar caixa             |");
             System.out.println("|9. Sair                        |");
             System.out.println("+===============================+");
-            System.out.print("Escolha uma opção: ");
-            var = teclado.nextInt();
+            var = Util.lerInt("Escolha uma opção: ", "");
             switch (var) {
                 case 1:
                     adicionarProduto();
                     break;
                 case 2:
-                    teclado.nextLine();
-                    System.out.print("Digite o nome do produto: ");
-                    String nome = teclado.nextLine();
+                    String nome = Util.lerString("Digite o nome do produto: ");
                     listarProdutosPorNome(nome);
                     break;
                 case 3:
@@ -53,23 +46,22 @@ public class Boteco {
                     listarProdutosCadastros();
 
                     while (true) {
-                        System.out.println("Digite o código do produto: ");
-                        int cod = teclado.nextInt();
-                        Produto p = produtos.get(cod - 1);
-                        System.out.println(p);
-                        System.out.print("Digite a quantidade: ");
-                        int quantidade = teclado.nextInt();
-                        if (!p.baixarDoEstoque(quantidade)) {
-                            System.out.println("Produto ou quantidade indisponível");
-                        } else {
-                            System.out.printf("%s - R$ %.2f x %d = %.2f\n", p.getNome(), p.getValorDeVenda(), quantidade,
-                                    (quantidade * p.getValorDeVenda()));
-                            caixa += quantidade * p.getValorDeVenda();
+                        int cod = Util.lerInt("Digite o código do produto: ", "Código inválido\n");
+                        if (cod != -1) {
+                            Produto p = produtos.get(cod - 1);
+                            System.out.println(p);
+                            int quantidade = Util.lerInt("Digite a quantidade: ", "");
+                            if (quantidade == -1 || !p.baixarDoEstoque(quantidade)) {
+                                System.out.println("Produto ou quantidade indisponível");
+                            } else {
+                                System.out.printf("%s - R$ %.2f x %d = %.2f\n", p.getNome(), p.getValorDeVenda(), quantidade,
+                                        (quantidade * p.getValorDeVenda()));
+                                caixa += quantidade * p.getValorDeVenda();
+                                ManipulaArquivo.salvarValorCaixa(caixa);
+                            }
                         }
-                        teclado.nextLine();
-                        System.out.println("Tecle 'F' para finalizar ou <Enter> para continuar vendendo");
-                        String cont = teclado.nextLine();
-                        if (cont.equals("F")) {
+                        String cont = Util.lerString("Tecle 'F' para finalizar ou <Enter> para continuar vendendo");
+                        if (cont.equalsIgnoreCase("F")) {
                             break;
                         }
                     }
@@ -89,40 +81,33 @@ public class Boteco {
     }
 
     public void adicionarProduto() {
-        String marca;
-        String nome;
-        int volume;
-        int quantidade;
-        double valorDeCompra;
-        double valorDeVenda;
         Produto p = new Produto();
         Util.load("Buscando produtos já cadastrados", 3000);
         listarProdutosCadastros();
         System.out.println("<<Atenção>> Este cadastro é para novos produtos");
         System.out.println("===== Cadastro de Produto =====");
-        teclado.nextLine();
-        System.out.print("Marca........: ");
-        marca = (teclado.nextLine());
-        System.out.print("Nome.........: ");
-        nome = (teclado.nextLine());
-        System.out.print("Volume(ml)...: ");
-        volume = (teclado.nextInt());
-        System.out.print("Quantidade...: ");
-        quantidade = (teclado.nextInt());
+        String marca = Util.lerString("Marca........: ");
+        String nome = Util.lerString("Nome.........: ");
+        int volume = Util.lerInt("Volume(ml)...: ", "Volume inválido\nCadastro cancelado\n");
+        if (volume == -1) return;
+        int quantidade = Util.lerInt("Quantidade...: ", "Quantidade inválida\nCadastro cancelado\n");
+        if (quantidade == -1) return;
         if (isCadastrado(nome, marca, volume)) {
             System.out.println("Produto já está cadastrado no sistema");
             System.out.println("Cadastro cancelado");
         } else {
-            System.out.print("Valor de compra.:");
-            valorDeCompra = (teclado.nextDouble());
-            System.out.printf("Valor de venda (Sugerido: %.2f): ", valorDeCompra * 1.30);
-            valorDeVenda = (teclado.nextDouble());
+            double valorDeCompra = Util.lerDouble("Valor de compra.:", "Valor inválido para compra\nCadastro cancelado\n");
+            if (valorDeCompra == -1) return;
+            double valorDeVenda = Util.lerDouble(String.format("Valor de venda (Sugerido: %.2f): ", valorDeCompra * 1.30), "Valor inválido para venda\nCadastro cancelado\n");
+            if (valorDeVenda == -1) return;
             Util.load("Verificando valor em caixa", 4000);
             if (quantidade * valorDeCompra > caixa) {
                 System.out.println("Compra cancelada por falta de recurso financeiro");
             } else {
                 caixa -= quantidade * valorDeCompra;
                 p.cadastrar(marca, nome, volume, valorDeCompra, valorDeVenda, quantidade);
+                ManipulaArquivo.salvarDados(p);
+                ManipulaArquivo.salvarValorCaixa(caixa);
                 System.out.println("Compra registrada");
                 produtos.add(p);
             }

@@ -103,6 +103,13 @@ public class Produto {
         this.quantidade = quantidade;
     }
 
+    /**
+     * 
+     * @return Retorna todos os atributos de forma a facilitar a manipulação (leitura e escrita) destes dados no arquivo
+     */
+    public String atributos () {
+        return marca+" ; "+nome+" ; "+volume+" ; "+valorDeCompra+" ; "+valorDeVenda+" ; "+quantidade;
+    }
     
     @Override
     public String toString() {
